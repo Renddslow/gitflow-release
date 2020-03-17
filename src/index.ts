@@ -8,24 +8,24 @@ import Logger from './log';
 
 interface Options {
   clone: boolean;
+  cwd: string;
   host?: 'github' | 'bitbucket';
   releaseBranch?: string;
   releaseBranchCb?: ((version: string) => void | Promise<void>);
   tagFormat: string;
   verbose: boolean;
-  workingDir: string;
 }
 
 const defaultOptions: Options = {
   clone: true,
-  verbose: false,
-  workingDir: process.cwd(),
+  cwd: process.cwd(),
   tagFormat: 'v{major}.{minor}.{patch}{suffix}',
+  verbose: false,
 };
 
 const getBaseUrl = (host: 'github' | 'bitbucket') => host === 'github' ? 'https://github.com/' : 'https://bitbucket.org/';
 
-export const release = (log = Logger, exec = Exec) => async (repo: string, version: string, opts: Options = defaultOptions) => {
+export const release = (log = Logger, exec = Exec) => async (repo: string, version: string, opts: Options = defaultOptions): Promise<string> => {
   const logger = log(opts.verbose);
   const run = exec(opts.verbose);
 
@@ -44,7 +44,7 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
   }
 
   version = semver.clean(version);
-  const releaseBranch = opts.releaseBranch || `release/${version}`;
+  const releaseBranch = opts.releaseBranch || `release/v${version}`;
   const repoUrl = `${getBaseUrl(opts.host)}${repo}`;
   const repoName = repo.split('/')[1];
 
@@ -62,11 +62,11 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
   logger(`Starting release on ${repo}. 🏗`);
 
   logger(`- Cloning from ${repoUrl}`);
-  process.chdir(opts.workingDir);
+  process.chdir(opts.cwd);
   if (opts.clone) {
     run([`git clone ${repoUrl}`]);
   }
-  process.chdir(path.join(opts.workingDir, repoName));
+  process.chdir(path.join(opts.cwd, repoName));
 
   run([
       'git checkout develop',
@@ -110,6 +110,8 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
 
   logger(`\n✨ The repo has been released.`);
   process.chdir(startDir);
+
+  return Promise.resolve(version);
 };
 
 export default release();
