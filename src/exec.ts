@@ -7,5 +7,5 @@ export default (verbose: boolean = false) => (cmds: Array<string> = []) => {
     console.log(cmd);
   }
 
-  return execSync(cmd, { stdio: verbose ? 'inherit' : 'pipe' });
+  execSync(cmd, { stdio: verbose ? 'inherit' : 'pipe' });
 };

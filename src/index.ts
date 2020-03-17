@@ -7,13 +7,13 @@ import Exec from './exec';
 import Logger from './log';
 
 interface Options {
-  clone: boolean;
-  cwd: string;
+  clone?: boolean;
+  cwd?: string;
   host?: 'github' | 'bitbucket';
   releaseBranch?: string;
-  releaseBranchCb?: ((version: string) => void | Promise<void>);
-  tagFormat: string;
-  verbose: boolean;
+  releaseBranchCb?: (version: string) => void | Promise<void>;
+  tagFormat?: string;
+  verbose?: boolean;
 }
 
 const defaultOptions: Options = {
@@ -23,24 +23,30 @@ const defaultOptions: Options = {
   verbose: false,
 };
 
-const getBaseUrl = (host: 'github' | 'bitbucket') => host === 'github' ? 'https://github.com/' : 'https://bitbucket.org/';
+const getBaseUrl = (host: 'github' | 'bitbucket') =>
+  host === 'github' ? 'https://github.com/' : 'https://bitbucket.org/';
 
-export const release = (log = Logger, exec = Exec) => async (repo: string, version: string, opts: Options = defaultOptions): Promise<string> => {
+export const release = (log = Logger, exec = Exec, cd = process.chdir) => async (
+  repo: string,
+  version: string,
+  opts: Options = defaultOptions,
+): Promise<string> => {
   const logger = log(opts.verbose);
   const run = exec(opts.verbose);
+  opts = Object.assign({}, defaultOptions, opts);
 
   const startDir = process.cwd();
 
   if (opts.clone && !opts.host) {
-    throw new Error(''); // TODO
+    throw new Error('"host" must be specified in order to clone');
   }
 
   if (repo.split('/').length !== 2) {
-    throw new Error(''); // TODO
+    throw new Error('"repo" must be provided in the format "<repo-owner>/<repo-name>"');
   }
 
   if (!semver.valid(version)) {
-    throw new Error(''); // TODO
+    throw new Error('"version" must be a valid semver version');
   }
 
   version = semver.clean(version);
@@ -49,7 +55,7 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
   const repoName = repo.split('/')[1];
 
   const [major, minor, ending] = version.split('.');
-  const [, patch, suffix] = (/([0-9]+)(.*)/g).exec(ending);
+  const [, patch, suffix] = /([0-9]+)(.*)/g.exec(ending);
   const versionComponents = {
     major,
     minor,
@@ -62,17 +68,15 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
   logger(`Starting release on ${repo}. 🏗`);
 
   logger(`- Cloning from ${repoUrl}`);
-  process.chdir(opts.cwd);
+  cd(opts.cwd);
+
   if (opts.clone) {
     run([`git clone ${repoUrl}`]);
   }
-  process.chdir(path.join(opts.cwd, repoName));
 
-  run([
-      'git checkout develop',
-      'git reset --hard',
-      'git pull origin develop',
-  ]);
+  cd(path.join(opts.cwd, repoName));
+
+  run(['git checkout develop', 'git reset --hard', 'git pull origin develop']);
 
   logger(`- Checking out a release branch for version ${version}`);
   run([`git checkout -b ${releaseBranch}`]);
@@ -91,25 +95,21 @@ export const release = (log = Logger, exec = Exec) => async (repo: string, versi
   run([`git tag ${tag}`]);
 
   logger(`- Merging release into master`);
-  run([
-      `git checkout master`,
-      `git pull origin master`,
-      `git merge ${releaseBranch}`,
-  ]);
+  run([`git checkout master`, `git pull origin master`, `git merge ${releaseBranch}`]);
 
   logger(`- Pushing changes to master`);
   run([`git push origin master`, `git push --tags`]);
 
   logger(`- Cleaning up git environment`);
   run([
-      `git branch -D ${releaseBranch}`,
-      `git checkout develop`,
-      `git merge master`,
-      `git push origin develop`,
+    `git branch -D ${releaseBranch}`,
+    `git checkout develop`,
+    `git merge master`,
+    `git push origin develop`,
   ]);
 
   logger(`\n✨ The repo has been released.`);
-  process.chdir(startDir);
+  cd(startDir);
 
   return Promise.resolve(version);
 };

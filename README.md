@@ -13,7 +13,7 @@ yarn add gitflow-release
 ```js
 const release = require('gitflow-release');
 
-release('Renddslow/gitflow-release', '1.0.0').then((version) => {
+release('Renddslow/gitflow-release', '1.0.0', { host: 'github' }).then((version) => {
   npmRelease(version);
   notifySlack(version);
 });
