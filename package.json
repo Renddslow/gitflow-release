@@ -1,0 +1,59 @@
+{
+  "name": "gitflow-release",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Do git-flow releases magically",
+  "main": "dist/index.js",
+  "repository": "https://github.com/Renddslow/gitflow-release",
+  "author": "Matt McElwee <mubatt@wyopub.com>",
+  "license": "MIT",
+  "dependencies": {
+    "kleur": "^3.0.3",
+    "pupa": "^2.0.1",
+    "semver": "^7.1.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@dmsi/prettier-config": "^1.3.0",
+    "ava": "^2.4.0",
+    "husky": "^3.1.0",
+    "lint-staged": "^9.5.0",
+    "prettier": "^1.19.1",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.2"
+  },
+  "scripts": {
+    "build": "tsc -d",
+    "test": "ava",
+    "prettier": "prettier *.{js,css,json,md} --write"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "prettier": "@dmsi/prettier-config",
+  "lint-staged": {
+    "*.{js,css,json,md}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "ava": {
+    "files": [
+      "src/test.ts"
+    ],
+    "concurrency": 4,
+    "timeout": "1m",
+    "babel": false,
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  }
+}
